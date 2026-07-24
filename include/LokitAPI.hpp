@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 enum DecisionOutcome {
-    OK, DENIED, CONN_ERR, TOKEN_REVOKED, UNKNOWN_CODE, MALFORMED_BODY
+    ACCESS_OK, ACCESS_DENIED, CONN_ERR, TOKEN_REVOKED, UNKNOWN_CODE, MALFORMED_BODY
 };
 
 class LokitAPI {
@@ -9,6 +9,6 @@ class LokitAPI {
         String serverPath;
         String deviceToken;
     public:
-        LokitAPI(String serverName, String deviceToken);
+        void init(String serverName, String deviceToken);
         DecisionOutcome requestDecision(String cardUid);
 };

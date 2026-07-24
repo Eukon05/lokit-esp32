@@ -7,18 +7,23 @@
 #include <Preferences.h>
 #include <PrefKeys.hpp>
 #include <LokitAPI.hpp>
+#include <DeviceStatus.hpp>
 
 #define SS_PIN 5
 #define RST_PIN 21
 
 #define BTN_PIN 22
 
+#define LED_R 12
+#define LED_G 14
+#define LED_B 27
+
 Preferences preferences;
 MFRC522 rfid(SS_PIN, RST_PIN);
 BluetoothManager* bluetooth = nullptr;
 LokitAPI* api = nullptr;
 
-bool ready = true;
+DeviceStatus devStatus = DeviceStatus::IDLE;
 int lastProvBtnState = HIGH;
 
 String readCardUid(){
@@ -34,19 +39,7 @@ String readCardUid(){
   return uidString;
 }
 
-void setup() {
-  Serial.begin(115200);
-  Serial.println("=== LOKIT READER INIT ===");
-
-  //hardware init
-  pinMode(BTN_PIN, INPUT_PULLUP);
-  SPI.begin();
-  rfid.PCD_Init();
-
-  // config init
-  preferences.begin("lokit-reader", false);
-  bluetooth = new BluetoothManager(&preferences);
-
+void refreshConfig(){
   String ssid = preferences.getString(WIFI_SSID_KEY, "");
   String pass = preferences.getString(WIFI_PASS_KEY, "");
   String serverName = preferences.getString(LOKIT_SERVER_KEY, "");
@@ -73,11 +66,7 @@ void setup() {
 
   const bool wifiConnected = WiFi.isConnected();
 
-  if(wifiReady && !wifiConnected){
-    Serial.println("Couldn't connect to WiFi!");
-    preferences.remove(WIFI_PASS_KEY);
-    ESP.restart();
-  }
+  if(wifiReady && !wifiConnected) Serial.println("Couldn't connect to WiFi!");
   else if (wifiReady) {
     Serial.println("WiFi connected!");
     Serial.printf("IPV4: ");
@@ -87,29 +76,75 @@ void setup() {
     Serial.println();
   }
 
-  if (lokitReady) {
-    api = new LokitAPI(serverName, deviceToken);
-  }
+  if (lokitReady) api->init(serverName, deviceToken);
 
-  ready = wifiReady && lokitReady && wifiConnected;
+  devStatus = wifiReady && lokitReady && wifiConnected ? DeviceStatus::IDLE : DeviceStatus::NOT_CONF;
+  if(devStatus == DeviceStatus::NOT_CONF) Serial.println("Device not fully configured! Start BLE provisioning and upload the configuration!");
+}
 
-  if(!ready){
-    Serial.println("Device not fully configured! Starting BLE provisioning...");
-    if (!wifiConnected || !lokitReady) bluetooth->initBLE(!wifiConnected, !lokitReady);
-  }
+void setLedColor(int r, int g, int b){
+  digitalWrite(LED_R, r);
+  digitalWrite(LED_G, g);
+  digitalWrite(LED_B, b);
+  delay(100);
+}
 
+void setup() {
+  Serial.begin(115200);
+  Serial.println("=== LOKIT READER INIT ===");
+
+  //hardware init
+  pinMode(BTN_PIN, INPUT_PULLUP);
+  pinMode(LED_R, OUTPUT);
+  pinMode(LED_G, OUTPUT);
+  pinMode(LED_B, OUTPUT);
+
+  SPI.begin();
+  rfid.PCD_Init();
+
+  // config init
+  preferences.begin("lokit-reader", false);
+  bluetooth = new BluetoothManager(&preferences);
+  api = new LokitAPI();
+  bluetooth->initBLE();
+
+  refreshConfig();
   Serial.println("LOKIT READER INIT COMPLETE");
 }
 
 void loop() {
   int currentProvBtnState = digitalRead(BTN_PIN);
 
-  if(lastProvBtnState == LOW && currentProvBtnState == HIGH)
-    Serial.println("ENABLING PROV"); // placeholder
+  if(lastProvBtnState == LOW && currentProvBtnState == HIGH){
+    if(bluetooth->isProvInProgress()){
+      Serial.println("Stopping BLE provisioning...");
+      bluetooth->stopProv();
+      refreshConfig();
+    }
+    else {
+      Serial.println("Starting BLE provisioning...");
+      bluetooth->startProv();
+      devStatus = DeviceStatus::IN_PROV;
+    }
+  }
 
   lastProvBtnState = currentProvBtnState;
 
-  if(!ready) return;
+  switch(devStatus){
+    case DeviceStatus::IDLE: {
+      setLedColor(0, 0, 0);
+      break;
+    }
+    case DeviceStatus::IN_PROV: {
+      setLedColor(0, 0, 50);
+      return;
+    }
+    case DeviceStatus::NOT_CONF: {
+      setLedColor(50, 50, 0);
+      return;
+    }
+  }
+
   if (!rfid.PICC_IsNewCardPresent()) return;
   if (!rfid.PICC_ReadCardSerial()) return;
 
@@ -120,17 +155,21 @@ void loop() {
   DecisionOutcome out = api->requestDecision(uidString);
 
   switch (out){
-    case DecisionOutcome::OK: {
+    case DecisionOutcome::ACCESS_OK: {
       Serial.println("ACCESS GRANTED");
+      setLedColor(0, 50, 0);
+      delay(1000);
       break;
     }
-    case DecisionOutcome::DENIED: {
+    case DecisionOutcome::ACCESS_DENIED: {
       Serial.println("ACCESS DENIED");
+      setLedColor(50, 0,0);
+      delay(1000);
       break;
     }
     case DecisionOutcome::TOKEN_REVOKED: {
       Serial.println("Device token has been revoked. Please start PROV and upload a new one!");
-      ready = false;
+      devStatus = DeviceStatus::NOT_CONF;
       break;
     }
     case DecisionOutcome::CONN_ERR: {

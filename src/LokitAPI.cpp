@@ -4,7 +4,7 @@
 #define HTTP_PREFIX "http://"
 #define DECISION_PATH "/api/v1/decision?cardId="
 
-LokitAPI::LokitAPI(String serverName, String deviceToken) {
+void LokitAPI::init(String serverName, String deviceToken) {
     serverPath = serverName;
 
     if (!serverPath.startsWith(HTTP_PREFIX))
@@ -48,7 +48,7 @@ DecisionOutcome LokitAPI::requestDecision(String cardUid) {
         if (error) return DecisionOutcome::MALFORMED_BODY;
 
         bool decision = doc["decision"];
-        return decision ? DecisionOutcome::OK : DecisionOutcome::DENIED;
+        return decision ? DecisionOutcome::ACCESS_OK : DecisionOutcome::ACCESS_DENIED;
     }
     else {
         http.end();

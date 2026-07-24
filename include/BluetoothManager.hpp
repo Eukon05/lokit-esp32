@@ -27,7 +27,12 @@ private:
 
     Preferences* prefs;
 
+    bool provInProgress = false;
+
 public:
     BluetoothManager(Preferences* preferences) : prefs(preferences) {}
-    void initBLE(bool advertiseWifi, bool advertiseLokit);
+    void initBLE();
+    void startProv();
+    void stopProv();
+    bool isProvInProgress();
 };
