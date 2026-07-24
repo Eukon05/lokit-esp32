@@ -10,13 +10,16 @@
 
 #define SS_PIN 5
 #define RST_PIN 21
- 
+
+#define BTN_PIN 22
+
 Preferences preferences;
 MFRC522 rfid(SS_PIN, RST_PIN);
 BluetoothManager* bluetooth = nullptr;
 LokitAPI* api = nullptr;
 
 bool ready = true;
+int lastProvBtnState = HIGH;
 
 String readCardUid(){
   String uidString = "";
@@ -36,6 +39,7 @@ void setup() {
   Serial.println("=== LOKIT READER INIT ===");
 
   //hardware init
+  pinMode(BTN_PIN, INPUT_PULLUP);
   SPI.begin();
   rfid.PCD_Init();
 
@@ -50,8 +54,6 @@ void setup() {
 
   const bool wifiReady = !ssid.isEmpty() && !pass.isEmpty();
   const bool lokitReady = !serverName.isEmpty() && !deviceToken.isEmpty();
-
-  bluetooth = new BluetoothManager(&preferences);
 
   if (wifiReady) {
     // WiFi init
@@ -100,6 +102,13 @@ void setup() {
 }
 
 void loop() {
+  int currentProvBtnState = digitalRead(BTN_PIN);
+
+  if(lastProvBtnState == LOW && currentProvBtnState == HIGH)
+    Serial.println("ENABLING PROV"); // placeholder
+
+  lastProvBtnState = currentProvBtnState;
+
   if(!ready) return;
   if (!rfid.PICC_IsNewCardPresent()) return;
   if (!rfid.PICC_ReadCardSerial()) return;
@@ -108,7 +117,35 @@ void loop() {
   Serial.printf("Card detected: %s\n", uidString);
 
   Serial.println("Trying to get decision from server...");
-  api->requestDecision(uidString);
+  DecisionOutcome out = api->requestDecision(uidString);
+
+  switch (out){
+    case DecisionOutcome::OK: {
+      Serial.println("ACCESS GRANTED");
+      break;
+    }
+    case DecisionOutcome::DENIED: {
+      Serial.println("ACCESS DENIED");
+      break;
+    }
+    case DecisionOutcome::TOKEN_REVOKED: {
+      Serial.println("Device token has been revoked. Please start PROV and upload a new one!");
+      ready = false;
+      break;
+    }
+    case DecisionOutcome::CONN_ERR: {
+      Serial.println("Network error while contacting the API. Check WiFi or server availability.");
+      break;
+    }
+    case DecisionOutcome::UNKNOWN_CODE: {
+      Serial.println("API returned an unknown response code. Potential server issue, no need to PROV yet");
+      break;
+    }
+    case DecisionOutcome::MALFORMED_BODY: {
+      Serial.println("API returned a malformed body with status 200. Potential server issue, no need to PROV yet");
+      break;
+    }
+  }
   
   rfid.PICC_HaltA();
 }
