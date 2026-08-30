@@ -174,6 +174,14 @@ void loop() {
     }
     case DecisionOutcome::CONN_ERR: {
       Serial.println("Network error while contacting the API. Check WiFi or server availability.");
+      setLedColor(50, 0, 0);
+      delay(500);
+      setLedColor(50, 50, 0);
+      delay(500);
+      setLedColor(50, 0, 0);
+      delay(500);
+      setLedColor(50, 50, 0);
+      delay(500);
       break;
     }
     case DecisionOutcome::UNKNOWN_CODE: {
