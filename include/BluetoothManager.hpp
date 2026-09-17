@@ -9,6 +9,8 @@
 #define WIFI_PASS_CHARACTERISTIC_UUID "fcd9d714-5194-4011-abb9-6c0a1690f465"
 #define LOKIT_SERVER_URL_CHARACTERISTIC_UUID "f6c1a2a5-1c93-4c61-a4fd-8c501c7f6c4a"
 #define LOKIT_TOKEN_CHARACTERISTIC_UUID "6d04e8d5-6c6d-4c29-bcd1-7f0d6c1bf6cb"
+#define LOKIT_SERVER_HTTP_PORT_CHARACTERISTIC_UUID "022968da-10a2-4f83-a8e7-d4b30454ff09"
+#define LOKIT_SERVER_MQTT_PORT_CHARACTERISTIC_UUID "570b646c-5944-47f5-8afc-9a0dc6499f2b"
 
 class BluetoothManager
 {
@@ -22,6 +24,9 @@ private:
 
     BLECharacteristic *bleServerUrlChar;
     BLECharacteristic *bleTokenChar;
+
+    BLECharacteristic *bleServerHttpPortChar;
+    BLECharacteristic *bleServerMqttPortChar;
 
     BLEAdvertising *bleAdv;
 

@@ -9,6 +9,6 @@ class LokitAPI {
         String serverPath;
         String deviceToken;
     public:
-        void init(String serverName, String deviceToken);
+        void init(String serverName, int serverPort, String deviceToken);
         DecisionOutcome requestDecision(String cardUid);
 };

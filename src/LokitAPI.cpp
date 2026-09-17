@@ -4,14 +4,17 @@
 #define HTTP_PREFIX "http://"
 #define DECISION_PATH "/api/v1/decision?cardId="
 
-void LokitAPI::init(String serverName, String deviceToken) {
+void LokitAPI::init(String serverName, int serverPort, String deviceToken) {
     serverPath = serverName;
+    serverPath.trim();
 
     if (!serverPath.startsWith(HTTP_PREFIX))
         serverPath = HTTP_PREFIX + serverPath;
 
-    if (!serverPath.endsWith(DECISION_PATH))
-        serverPath += DECISION_PATH;
+    while (serverPath.endsWith("/"))
+        serverPath.remove(serverPath.length() - 1);
+
+    serverPath += ":" + String(serverPort) + DECISION_PATH;
 
     this->deviceToken = deviceToken;
 }
@@ -19,6 +22,8 @@ void LokitAPI::init(String serverName, String deviceToken) {
 DecisionOutcome LokitAPI::requestDecision(String cardUid) {
     String reqAddr = serverPath + cardUid;
     HTTPClient http;
+
+    Serial.printf("Lokit API request: %s\n", reqAddr.c_str());
 
     if (!http.begin(reqAddr.c_str())) {
         return DecisionOutcome::CONN_ERR;

@@ -7,6 +7,7 @@
 #include <Preferences.h>
 #include <PrefKeys.hpp>
 #include <LokitAPI.hpp>
+#include <MqttManager.hpp>
 #include <DeviceStatus.hpp>
 
 #define SS_PIN 5
@@ -22,6 +23,7 @@ Preferences preferences;
 MFRC522 rfid(SS_PIN, RST_PIN);
 BluetoothManager* bluetooth = nullptr;
 LokitAPI* api = nullptr;
+MqttManager* mqtt = nullptr;
 
 DeviceStatus devStatus = DeviceStatus::IDLE;
 int lastProvBtnState = HIGH;
@@ -43,7 +45,11 @@ void refreshConfig(){
   String ssid = preferences.getString(WIFI_SSID_KEY, "");
   String pass = preferences.getString(WIFI_PASS_KEY, "");
   String serverName = preferences.getString(LOKIT_SERVER_KEY, "");
+  int serverHttpPort = preferences.getInt(LOKIT_SERVER_HTTP_PORT_KEY, 80);
+  int serverMqttPort = preferences.getInt(LOKIT_SERVER_MQTT_PORT_KEY, 1883);
   String deviceToken = preferences.getString(LOKIT_TOKEN_KEY, "");
+
+  Serial.printf("Lokit server: %s (HTTP %d, MQTT %d)\n", serverName.c_str(), serverHttpPort, serverMqttPort);
 
   const bool wifiReady = !ssid.isEmpty() && !pass.isEmpty();
   const bool lokitReady = !serverName.isEmpty() && !deviceToken.isEmpty();
@@ -76,7 +82,8 @@ void refreshConfig(){
     Serial.println();
   }
 
-  if (lokitReady) api->init(serverName, deviceToken);
+  if (lokitReady) api->init(serverName, serverHttpPort, deviceToken);
+  if (lokitReady) mqtt->init(serverName, serverMqttPort, deviceToken);
 
   devStatus = wifiReady && lokitReady && wifiConnected ? DeviceStatus::IDLE : DeviceStatus::NOT_CONF;
   if(devStatus == DeviceStatus::NOT_CONF) Serial.println("Device not fully configured! Start BLE provisioning and upload the configuration!");
@@ -106,6 +113,7 @@ void setup() {
   preferences.begin("lokit-reader", false);
   bluetooth = new BluetoothManager(&preferences);
   api = new LokitAPI();
+  mqtt = new MqttManager(&preferences);
   bluetooth->initBLE();
 
   refreshConfig();
@@ -129,6 +137,11 @@ void loop() {
   }
 
   lastProvBtnState = currentProvBtnState;
+
+  if (devStatus == DeviceStatus::IDLE && !mqtt->loop()) {
+    Serial.println("MQTT token is invalid. Device not fully configured!");
+    devStatus = DeviceStatus::NOT_CONF;
+  }
 
   switch(devStatus){
     case DeviceStatus::IDLE: {

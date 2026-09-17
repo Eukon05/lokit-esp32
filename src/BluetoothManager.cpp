@@ -34,11 +34,25 @@ void BluetoothManager::initBLE(){
         LOKIT_TOKEN_CHARACTERISTIC_UUID,
         BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
 
+    bleServerHttpPortChar = bleLokitService->createCharacteristic(
+        LOKIT_SERVER_HTTP_PORT_CHARACTERISTIC_UUID,
+        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+
+    bleServerMqttPortChar = bleLokitService->createCharacteristic(
+        LOKIT_SERVER_MQTT_PORT_CHARACTERISTIC_UUID,
+        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+
     bleServerUrlChar->setValue("LOKIT SERVER URL HERE");
     bleTokenChar->setValue("LOKIT TOKEN HERE");
 
+    bleServerHttpPortChar->setValue("LOKIT SERVER HTTP PORT HERE");
+    bleServerMqttPortChar->setValue("LOKIT SERVER MQTT PORT HERE");
+
     bleServerUrlChar->setCallbacks(new PrefCallback(prefs, LOKIT_SERVER_KEY));
     bleTokenChar->setCallbacks(new PrefCallback(prefs, LOKIT_TOKEN_KEY));
+
+    bleServerHttpPortChar->setCallbacks(new PrefCallback(prefs, LOKIT_SERVER_HTTP_PORT_KEY, true));
+    bleServerMqttPortChar->setCallbacks(new PrefCallback(prefs, LOKIT_SERVER_MQTT_PORT_KEY, true));
 
     bleLokitService->start();
 
