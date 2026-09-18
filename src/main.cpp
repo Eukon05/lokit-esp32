@@ -7,6 +7,7 @@
 #include <Preferences.h>
 #include <PrefKeys.hpp>
 #include <LokitAPI.hpp>
+#include <LedManager.hpp>
 #include <MqttManager.hpp>
 #include <DeviceStatus.hpp>
 
@@ -15,13 +16,10 @@
 
 #define BTN_PIN 22
 
-#define LED_R 12
-#define LED_G 14
-#define LED_B 27
-
 Preferences preferences;
 MFRC522 rfid(SS_PIN, RST_PIN);
 BluetoothManager* bluetooth = nullptr;
+LedManager* led = nullptr;
 LokitAPI* api = nullptr;
 MqttManager* mqtt = nullptr;
 
@@ -89,12 +87,7 @@ void refreshConfig(){
   if(devStatus == DeviceStatus::NOT_CONF) Serial.println("Device not fully configured! Start BLE provisioning and upload the configuration!");
 }
 
-void setLedColor(int r, int g, int b){
-  digitalWrite(LED_R, r);
-  digitalWrite(LED_G, g);
-  digitalWrite(LED_B, b);
-  delay(100);
-}
+
 
 void setup() {
   Serial.begin(115200);
@@ -102,9 +95,6 @@ void setup() {
 
   //hardware init
   pinMode(BTN_PIN, INPUT_PULLUP);
-  pinMode(LED_R, OUTPUT);
-  pinMode(LED_G, OUTPUT);
-  pinMode(LED_B, OUTPUT);
 
   SPI.begin();
   rfid.PCD_Init();
@@ -112,9 +102,11 @@ void setup() {
   // config init
   preferences.begin("lokit-reader", false);
   bluetooth = new BluetoothManager(&preferences);
+  led = new LedManager(devStatus);
   api = new LokitAPI();
   mqtt = new MqttManager(&preferences);
   bluetooth->initBLE();
+  led->init();
 
   refreshConfig();
   Serial.println("LOKIT READER INIT COMPLETE");
@@ -144,18 +136,11 @@ void loop() {
   }
 
   switch(devStatus){
-    case DeviceStatus::IDLE: {
-      setLedColor(0, 0, 0);
+    case DeviceStatus::IN_PROV:
+    case DeviceStatus::NOT_CONF:
+      return;
+    default:
       break;
-    }
-    case DeviceStatus::IN_PROV: {
-      setLedColor(0, 0, 50);
-      return;
-    }
-    case DeviceStatus::NOT_CONF: {
-      setLedColor(50, 50, 0);
-      return;
-    }
   }
 
   if (!rfid.PICC_IsNewCardPresent()) return;
@@ -170,31 +155,25 @@ void loop() {
   switch (out){
     case DecisionOutcome::ACCESS_OK: {
       Serial.println("ACCESS GRANTED");
-      setLedColor(0, 50, 0);
+      devStatus = DeviceStatus::OPEN;
       delay(1000);
       break;
     }
     case DecisionOutcome::ACCESS_DENIED: {
       Serial.println("ACCESS DENIED");
-      setLedColor(50, 0,0);
+      devStatus = DeviceStatus::ENTRY_DENIED;
       delay(1000);
       break;
     }
     case DecisionOutcome::TOKEN_REVOKED: {
       Serial.println("Device token has been revoked. Please start PROV and upload a new one!");
       devStatus = DeviceStatus::NOT_CONF;
-      break;
+      return;
     }
     case DecisionOutcome::CONN_ERR: {
       Serial.println("Network error while contacting the API. Check WiFi or server availability.");
-      setLedColor(50, 0, 0);
-      delay(500);
-      setLedColor(50, 50, 0);
-      delay(500);
-      setLedColor(50, 0, 0);
-      delay(500);
-      setLedColor(50, 50, 0);
-      delay(500);
+      devStatus = DeviceStatus::NETWORK_ERR;
+      delay(2000);
       break;
     }
     case DecisionOutcome::UNKNOWN_CODE: {
@@ -206,6 +185,7 @@ void loop() {
       break;
     }
   }
-  
+
+  devStatus = DeviceStatus::IDLE;
   rfid.PICC_HaltA();
 }
