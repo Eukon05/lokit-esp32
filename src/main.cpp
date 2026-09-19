@@ -80,14 +80,14 @@ void refreshConfig(){
     Serial.println();
   }
 
-  if (lokitReady) api->init(serverName, serverHttpPort, deviceToken);
-  if (lokitReady) mqtt->init(serverName, serverMqttPort, deviceToken);
+  if (lokitReady) {
+    api->init(serverName, serverHttpPort, deviceToken);
+    mqtt->init(serverName, serverMqttPort, deviceToken);
+  }
 
   devStatus = wifiReady && lokitReady && wifiConnected ? DeviceStatus::IDLE : DeviceStatus::NOT_CONF;
   if(devStatus == DeviceStatus::NOT_CONF) Serial.println("Device not fully configured! Start BLE provisioning and upload the configuration!");
 }
-
-
 
 void setup() {
   Serial.begin(115200);
@@ -101,12 +101,15 @@ void setup() {
 
   // config init
   preferences.begin("lokit-reader", false);
+
   bluetooth = new BluetoothManager(&preferences);
   led = new LedManager(devStatus);
   api = new LokitAPI();
   mqtt = new MqttManager(&preferences);
+
   bluetooth->initBLE();
-  led->init();
+  led->startLoop();
+  mqtt->startLoop();
 
   refreshConfig();
   Serial.println("LOKIT READER INIT COMPLETE");
@@ -129,11 +132,6 @@ void loop() {
   }
 
   lastProvBtnState = currentProvBtnState;
-
-  if (devStatus == DeviceStatus::IDLE && !mqtt->loop()) {
-    Serial.println("MQTT token is invalid. Device not fully configured!");
-    devStatus = DeviceStatus::NOT_CONF;
-  }
 
   switch(devStatus){
     case DeviceStatus::IN_PROV:

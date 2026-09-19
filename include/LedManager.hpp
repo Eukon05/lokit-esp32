@@ -9,9 +9,9 @@ class LedManager {
     private:
         TaskHandle_t ledTaskHandle = nullptr;
         DeviceStatus& deviceStatus;
-        static void runLed(void *parameter);
+        static void runLoop(void *parameter);
     public:
         LedManager(DeviceStatus& devStat);
-        void init();
+        void startLoop();
         void setLedColor(int r, int g, int b);
 };

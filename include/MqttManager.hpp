@@ -15,13 +15,14 @@ private:
     PubSubClient mqttClient;
     Preferences *prefs;
     bool configured = false;
-    unsigned long lastHeartbeatAt = 0;
+    TaskHandle_t mqttTaskHandle = nullptr;
 
-    bool reconnect();
+    void reconnect();
     void publishHeartbeat();
+    static void runLoop(void *parameter);
 
 public:
     MqttManager(Preferences *preferences);
     void init(String serverName, int serverPort, String clientPass);
-    bool loop();
+    void startLoop();
 };

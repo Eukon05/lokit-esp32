@@ -13,7 +13,7 @@ void LedManager::setLedColor(int r, int g, int b) {
     delay(100);
 }
 
-void LedManager::runLed(void *parameter) {
+void LedManager::runLoop(void *parameter) {
     LedManager* instance = static_cast<LedManager*>(parameter);
 
     while (true) {
@@ -51,9 +51,9 @@ void LedManager::runLed(void *parameter) {
     }
 }
 
-void LedManager::init(){
+void LedManager::startLoop(){
     xTaskCreate(
-    runLed,         // Task function
+    runLoop,         // Task function
     "LedTask",       // Task name
     10000,             // Stack size (bytes)
     this,              // Parameters

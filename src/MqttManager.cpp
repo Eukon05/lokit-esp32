@@ -14,15 +14,10 @@ void MqttManager::init(String serverName, int serverPort, String clientPass)
     mqttClient.setServer(mqttHost.c_str(), serverPort);
 }
 
-bool MqttManager::reconnect()
+void MqttManager::reconnect()
 {
-    int retries = 0;
     while (!mqttClient.connected())
     {
-        if(retries > 5)
-            return false;
-
-        retries++;
         Serial.print("Attempting MQTT connection...");
         clientId.toUpperCase();
 
@@ -31,8 +26,6 @@ bool MqttManager::reconnect()
         if (mqttClient.connect(clientId.c_str(), clientId.c_str(), pass.c_str()))
         {
             Serial.println("MQTT Connected");
-            publishHeartbeat();
-            lastHeartbeatAt = millis();
         }
         else
         {
@@ -44,40 +37,52 @@ bool MqttManager::reconnect()
             {
                 Serial.println(" invalid MQTT credentials");
                 configured = false;
-                return false;
             }
 
             Serial.println(" try again in 5 seconds");
             delay(5000);
         }
     }
-
-    return true;
 }
 
-bool MqttManager::loop()
+void MqttManager::runLoop(void *parameter)
 {
-    if (!configured || !WiFi.isConnected())
-        return configured;
+    MqttManager* instance = static_cast<MqttManager*>(parameter);
+    unsigned long lastHeartbeatAt = 0;
 
-    if (!mqttClient.connected())
-    {
-        if (!reconnect())
-            return false;
+    while (true) {
+        if (!instance->configured || !WiFi.isConnected()){
+            delay(1000);
+            continue;
+        }
+
+        if (!instance->mqttClient.connected())
+        {
+            instance->reconnect();
+        }
+
+        instance->mqttClient.loop();
+
+        if (millis() - lastHeartbeatAt >= 300000UL)
+        {
+            instance->publishHeartbeat();
+            lastHeartbeatAt = millis();
+        }
     }
-
-    mqttClient.loop();
-
-    if (millis() - lastHeartbeatAt >= 300000UL)
-    {
-        publishHeartbeat();
-        lastHeartbeatAt = millis();
-    }
-
-    return true;
 }
 
 void MqttManager::publishHeartbeat(){
     mqttClient.publish(heartbeatTopic.c_str(), "");
     Serial.println("Published heartbeat signal to MQTT");
+}
+
+void MqttManager::startLoop() {
+    xTaskCreate(
+    runLoop,         // Task function
+    "MqttTask",       // Task name
+    10000,             // Stack size (bytes)
+    this,              // Parameters
+    1,                 // Priority
+    &mqttTaskHandle  // Task handle
+  );
 }
