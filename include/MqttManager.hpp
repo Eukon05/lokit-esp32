@@ -1,27 +1,30 @@
+#pragma once
+
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <PubSubClient.h>
 #include <Preferences.h>
 #include <PrefKeys.hpp>
+#include <DeviceConfig.hpp>
 
 class MqttManager
 {
 private:
     String clientId;
+    String mqttHost;
     String clientPass;
     String heartbeatTopic;
-    String mqttHost;
     WiFiClient mqttWifi;
     PubSubClient mqttClient;
-    Preferences *prefs;
     bool configured = false;
-    unsigned long lastHeartbeatAt = 0;
+    TaskHandle_t mqttTaskHandle = nullptr;
 
-    bool reconnect();
+    void reconnect();
     void publishHeartbeat();
+    static void runLoop(void *parameter);
 
 public:
-    MqttManager(Preferences *preferences);
+    MqttManager();
     void init(String serverName, int serverPort, String clientPass);
-    bool loop();
+    void startLoop();
 };
