@@ -1,6 +1,6 @@
 #include <MqttManager.hpp>
 
-MqttManager::MqttManager(Preferences* preferences): prefs(preferences), mqttClient(mqttWifi) {
+MqttManager::MqttManager(): mqttClient(mqttWifi) {
     clientId = WiFi.macAddress();
     clientId.toUpperCase();
     heartbeatTopic = "lokit/devices/" + clientId + "/heartbeat";
@@ -21,9 +21,7 @@ void MqttManager::reconnect()
         Serial.print("Attempting MQTT connection...");
         clientId.toUpperCase();
 
-        String pass = prefs->getString(LOKIT_TOKEN_KEY);
-
-        if (mqttClient.connect(clientId.c_str(), clientId.c_str(), pass.c_str()))
+        if (mqttClient.connect(clientId.c_str(), clientId.c_str(), clientPass.c_str()))
         {
             Serial.println("MQTT Connected");
         }
@@ -40,7 +38,7 @@ void MqttManager::reconnect()
             }
 
             Serial.println(" try again in 5 seconds");
-            delay(5000);
+            vTaskDelay(5000 / portTICK_PERIOD_MS);
         }
     }
 }
@@ -52,7 +50,7 @@ void MqttManager::runLoop(void *parameter)
 
     while (true) {
         if (!instance->configured || !WiFi.isConnected()){
-            delay(1000);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
             continue;
         }
 
@@ -68,6 +66,8 @@ void MqttManager::runLoop(void *parameter)
             instance->publishHeartbeat();
             lastHeartbeatAt = millis();
         }
+
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
 

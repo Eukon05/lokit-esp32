@@ -10,7 +10,6 @@ void LedManager::setLedColor(int r, int g, int b) {
     digitalWrite(LED_R, r);
     digitalWrite(LED_G, g);
     digitalWrite(LED_B, b);
-    delay(100);
 }
 
 void LedManager::runLoop(void *parameter) {
@@ -24,9 +23,9 @@ void LedManager::runLoop(void *parameter) {
             }
             case DeviceStatus::IN_PROV: {
                 instance->setLedColor(0, 0, 50);
-                delay(1000);
+                vTaskDelay(1000 / portTICK_PERIOD_MS);
                 instance->setLedColor(0, 0, 0);
-                delay(1000);
+                vTaskDelay(1000 / portTICK_PERIOD_MS);
                 break;
             }
             case DeviceStatus::NOT_CONF: {
@@ -43,9 +42,9 @@ void LedManager::runLoop(void *parameter) {
             }
             case DeviceStatus::NETWORK_ERR: {
                 instance->setLedColor(50, 0, 0);
-                delay(500);
+                vTaskDelay(500 / portTICK_PERIOD_MS);
                 instance->setLedColor(50, 50, 0);
-                delay(500);
+                vTaskDelay(500 / portTICK_PERIOD_MS);
             }
         }
     }

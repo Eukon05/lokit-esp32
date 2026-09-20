@@ -67,18 +67,31 @@ void BluetoothManager::initBLE(){
 }
 
 void BluetoothManager::startProv(){
+    if (!bleAdv || !bleServer) {
+        Serial.println("BLE not initialized; cannot start advertising");
+        return;
+    }
+
+    if (provInProgress) {
+        return;
+    }
+
     provInProgress = true;
     BLEDevice::startAdvertising();
 }
 
 void BluetoothManager::stopProv(){
-    provInProgress = false;
-
-    if (bleServer && bleServer->getConnectedCount() > 0) {
-        bleServer->disconnect(bleServer->getConnId());
+    if (!bleAdv || !bleServer) {
+        Serial.println("BLE not initialized; nothing to stop");
+        return;
     }
 
+    provInProgress = false;
     BLEDevice::stopAdvertising();
+
+    if (bleServer->getConnectedCount() > 0) {
+        bleServer->disconnect(bleServer->getConnId());
+    }
 }
 
 bool BluetoothManager::isProvInProgress(){

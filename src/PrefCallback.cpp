@@ -9,6 +9,5 @@ void PrefCallback::onWrite(BLECharacteristic *pLedCharacteristic)
         Serial.printf("READ VAL: %s\n", value.c_str());
 
         isInt ? prefs->putInt(prefName, atoi(value.c_str())) : prefs->putString(prefName, value.c_str());
-        
     }
 }
