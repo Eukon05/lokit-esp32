@@ -31,19 +31,21 @@ void MqttManager::reconnect()
             Serial.print("failed, rc=");
             Serial.print(mqttClient.state());
 
-            if (mqttClient.state() == MQTT_CONNECT_BAD_CREDENTIALS || mqttClient.state() == MQTT_CONNECT_UNAUTHORIZED) {
-                Serial.println(" invalid MQTT credentials");
-                configured = false;
-                deviceStatus = DeviceStatus::NOT_CONF;
-                break;
-            }
-            else if(mqttClient.state() == MQTT_CONNECTION_TIMEOUT || 
-                    mqttClient.state() == MQTT_CONNECT_FAILED ||
-                    mqttClient.state() == MQTT_CONNECT_UNAVAILABLE
-                )
-            {
-                Serial.println(" can't connect to MQTT server");
-                deviceStatus = DeviceStatus::NETWORK_ERR;
+            switch (mqttClient.state()){
+                case MQTT_CONNECT_BAD_CREDENTIALS: 
+                case MQTT_CONNECT_UNAUTHORIZED: {
+                    Serial.println(" invalid MQTT credentials");
+                    configured = false;
+                    deviceStatus = DeviceStatus::NOT_CONF;
+                    return;
+                }
+                case MQTT_CONNECTION_TIMEOUT:
+                case MQTT_CONNECT_FAILED:
+                case MQTT_CONNECT_UNAVAILABLE: {
+                    Serial.println(" can't connect to MQTT server");
+                    deviceStatus = DeviceStatus::NETWORK_ERR;
+                    break;
+                }
             }
 
             Serial.println(" try again in 5 seconds");
