@@ -4,8 +4,12 @@ DeviceManager::DeviceManager(Preferences* preferences){
     this->config = new DeviceConfig(preferences);
     this->bluetoothManager = new BluetoothManager(preferences);
     this->bluetoothManager->initBLE();
+    
     this->lokitAPI = new LokitAPI();
-    this->mqttManager = new MqttManager();
+    this->mqttManager = new MqttManager(config->getDeviceStatus());
+    this->ledManager = new LedManager(config->getDeviceStatus());
+
+    this->ledManager->startLoop();
     this->mqttManager->startLoop();
 }
 

@@ -47,6 +47,8 @@ void LedManager::runLoop(void *parameter) {
                 vTaskDelay(500 / portTICK_PERIOD_MS);
             }
         }
+
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
 

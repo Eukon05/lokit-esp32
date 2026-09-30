@@ -1,6 +1,6 @@
 #include <MqttManager.hpp>
 
-MqttManager::MqttManager(): mqttClient(mqttWifi) {
+MqttManager::MqttManager(DeviceStatus& deviceStatus): mqttClient(mqttWifi), deviceStatus(deviceStatus) {
     clientId = WiFi.macAddress();
     clientId.toUpperCase();
     heartbeatTopic = "lokit/devices/" + clientId + "/heartbeat";
@@ -24,17 +24,26 @@ void MqttManager::reconnect()
         if (mqttClient.connect(clientId.c_str(), clientId.c_str(), clientPass.c_str()))
         {
             Serial.println("MQTT Connected");
+            deviceStatus = DeviceStatus::IDLE;
         }
         else
         {
             Serial.print("failed, rc=");
             Serial.print(mqttClient.state());
 
-            if (mqttClient.state() == MQTT_CONNECT_BAD_CREDENTIALS ||
-                mqttClient.state() == MQTT_CONNECT_UNAUTHORIZED)
-            {
+            if (mqttClient.state() == MQTT_CONNECT_BAD_CREDENTIALS || mqttClient.state() == MQTT_CONNECT_UNAUTHORIZED) {
                 Serial.println(" invalid MQTT credentials");
                 configured = false;
+                deviceStatus = DeviceStatus::NOT_CONF;
+                break;
+            }
+            else if(mqttClient.state() == MQTT_CONNECTION_TIMEOUT || 
+                    mqttClient.state() == MQTT_CONNECT_FAILED ||
+                    mqttClient.state() == MQTT_CONNECT_UNAVAILABLE
+                )
+            {
+                Serial.println(" can't connect to MQTT server");
+                deviceStatus = DeviceStatus::NETWORK_ERR;
             }
 
             Serial.println(" try again in 5 seconds");
@@ -50,6 +59,9 @@ void MqttManager::runLoop(void *parameter)
 
     while (true) {
         if (!instance->configured || !WiFi.isConnected()){
+            if (instance->configured && !WiFi.isConnected()) {
+                instance->deviceStatus = DeviceStatus::NETWORK_ERR;
+            }
             vTaskDelay(1000 / portTICK_PERIOD_MS);
             continue;
         }

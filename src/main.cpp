@@ -2,7 +2,6 @@
 #include <SPI.h>
 #include <MFRC522.h>
 #include <Preferences.h>
-#include <LedManager.hpp>
 #include <ProvButtonManager.hpp>
 #include <DeviceManager.hpp>
 
@@ -12,7 +11,6 @@
 Preferences preferences;
 MFRC522 rfid(SS_PIN, RST_PIN);
 
-LedManager* led = nullptr;
 ProvButtonManager* provBtnMgr = nullptr;
 DeviceManager* device = nullptr;
 
@@ -39,11 +37,7 @@ void setup() {
   // config init
   preferences.begin("lokit-reader", false);
   device = new DeviceManager(&preferences);
-
-  led = new LedManager(device->getDeviceStatus());
   provBtnMgr = new ProvButtonManager(device);
-
-  led->startLoop();
 
   device->init();
   Serial.println("LOKIT READER INIT COMPLETE");

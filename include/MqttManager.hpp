@@ -6,6 +6,7 @@
 #include <Preferences.h>
 #include <PrefKeys.hpp>
 #include <DeviceConfig.hpp>
+#include <DeviceStatus.hpp>
 
 class MqttManager
 {
@@ -16,6 +17,7 @@ private:
     String heartbeatTopic;
     WiFiClient mqttWifi;
     PubSubClient mqttClient;
+    DeviceStatus& deviceStatus;
     bool configured = false;
     TaskHandle_t mqttTaskHandle = nullptr;
 
@@ -24,7 +26,7 @@ private:
     static void runLoop(void *parameter);
 
 public:
-    MqttManager();
+    MqttManager(DeviceStatus& deviceStatus);
     void init(String serverName, int serverPort, String clientPass);
     void startLoop();
 };

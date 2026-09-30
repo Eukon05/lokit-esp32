@@ -4,6 +4,7 @@
 #include <BluetoothManager.hpp>
 #include <LokitAPI.hpp>
 #include <MqttManager.hpp>
+#include <LedManager.hpp>
 
 class DeviceManager {
     private:
@@ -11,6 +12,7 @@ class DeviceManager {
     BluetoothManager* bluetoothManager;
     LokitAPI* lokitAPI;
     MqttManager* mqttManager;
+    LedManager* ledManager;
     volatile bool provToggleRequested = false;
 
     public:
