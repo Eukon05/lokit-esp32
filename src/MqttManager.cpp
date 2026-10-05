@@ -49,6 +49,8 @@ void MqttManager::callback(char* topic, byte* payload, unsigned int length) {
         response["commandId"] = doc["id"];
         const unsigned long expiresAt = doc["expiresAt"].as<unsigned long>();
 
+        bool rebootRequired = false;
+
         if(expiresAt < getTime()){
             Serial.println("Received an EXPIRED MQTT command, skipping...");
             response["response"] = "EXPIRED";
@@ -67,8 +69,12 @@ void MqttManager::callback(char* topic, byte* payload, unsigned int length) {
             else if (strcmp(command, "IDLE") == 0){
                 deviceStatus = DeviceStatus::IDLE;
             }
-
-            delete command;
+            else if (strcmp(command, "REBOOT") == 0){
+                rebootRequired = true;
+            }
+            else {
+                Serial.println("Command unsupported! No action taken");
+            }
         }
 
         char buffer[256];
@@ -76,7 +82,12 @@ void MqttManager::callback(char* topic, byte* payload, unsigned int length) {
         mqttClient.publish(responseTopic.c_str(), buffer, n);
         Serial.println("Published MQTT command response");
 
-        delete buffer;
+        if(rebootRequired) {
+            Serial.println("A REBOOT IS REQUIRED! Waiting for 5 seconds...");
+            vTaskDelay(5000 / portTICK_PERIOD_MS);
+            Serial.println("REBOOTING");
+            ESP.restart();
+        }
     }
 }
 
