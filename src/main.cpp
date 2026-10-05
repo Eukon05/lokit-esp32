@@ -47,6 +47,8 @@ void loop() {
   device->processRequests();
 
   switch(device->getDeviceStatus()){
+    case DeviceStatus::KEEP_OPEN:
+    case DeviceStatus::KEEP_CLOSED:
     case DeviceStatus::IN_PROV:
     case DeviceStatus::NOT_CONF:
       return;
