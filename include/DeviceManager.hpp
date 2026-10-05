@@ -6,6 +6,8 @@
 #include <MqttManager.hpp>
 #include <LedManager.hpp>
 
+#define NTP_SERVER "pool.ntp.org"
+
 class DeviceManager {
     private:
     DeviceConfig* config;

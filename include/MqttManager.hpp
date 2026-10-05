@@ -15,6 +15,8 @@ private:
     String mqttHost;
     String clientPass;
     String heartbeatTopic;
+    String commandTopic;
+    String responseTopic;
     WiFiClient mqttWifi;
     PubSubClient mqttClient;
     DeviceStatus& deviceStatus;
@@ -22,6 +24,7 @@ private:
     TaskHandle_t mqttTaskHandle = nullptr;
 
     void reconnect();
+    void callback(char* topic, byte* payload, unsigned int length);
     void publishHeartbeat();
     static void runLoop(void *parameter);
 

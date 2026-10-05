@@ -45,6 +45,7 @@ void DeviceManager::init(){
         Serial.printf("MAC: ");
         Serial.println(WiFi.macAddress());
         Serial.println();
+        configTime(0, 0, NTP_SERVER);
     }
 
     if (lokitReady) {

@@ -32,11 +32,13 @@ void LedManager::runLoop(void *parameter) {
                 instance->setLedColor(50, 50, 0);
                 break;
             }
-            case DeviceStatus::OPEN: {
+            case DeviceStatus::OPEN: 
+            case DeviceStatus::KEEP_OPEN: {
                 instance->setLedColor(0, 50, 0);
                 break;
             }
-            case DeviceStatus::ENTRY_DENIED: {
+            case DeviceStatus::ENTRY_DENIED: 
+            case DeviceStatus::KEEP_CLOSED: {
                 instance->setLedColor(50, 0, 0);
                 break;
             }
