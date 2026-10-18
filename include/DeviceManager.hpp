@@ -5,6 +5,7 @@
 #include <LokitAPI.hpp>
 #include <MqttManager.hpp>
 #include <LedManager.hpp>
+#include <ServoManager.hpp>
 
 #define NTP_SERVER "pool.ntp.org"
 
@@ -15,6 +16,7 @@ class DeviceManager {
     LokitAPI* lokitAPI;
     MqttManager* mqttManager;
     LedManager* ledManager;
+    ServoManager* servoManager;
     volatile bool provToggleRequested = false;
 
     public:
