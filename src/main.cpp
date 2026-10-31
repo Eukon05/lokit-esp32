@@ -69,7 +69,7 @@ void loop() {
     case DecisionOutcome::ACCESS_OK: {
       Serial.println("ACCESS GRANTED");
       device->setDeviceStatus(DeviceStatus::OPEN);
-      delay(1000);
+      delay(3000);
       break;
     }
     case DecisionOutcome::ACCESS_DENIED: {

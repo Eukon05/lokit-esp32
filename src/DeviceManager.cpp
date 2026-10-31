@@ -8,8 +8,10 @@ DeviceManager::DeviceManager(Preferences* preferences){
     this->lokitAPI = new LokitAPI();
     this->mqttManager = new MqttManager(config->getDeviceStatus());
     this->ledManager = new LedManager(config->getDeviceStatus());
+    this->servoManager = new ServoManager(config->getDeviceStatus());
 
     this->ledManager->startLoop();
+    this->servoManager->startLoop();
     this->mqttManager->startLoop();
 }
 
